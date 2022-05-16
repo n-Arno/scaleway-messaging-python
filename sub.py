@@ -1,14 +1,16 @@
+import sys
 import asyncio
 import signal
 from nats.aio.client import Client as NATS
 
-async def main():
+
+async def main(server_ip):
     nc = NATS()
 
     # Modify this with your informations
     options = {
-        "servers": ["nats://IP:4222"],
-        "user_credentials": "nats.creds"
+        "servers": [f"nats://{server_ip}:4222"],
+        "user_credentials": "nats.creds",
     }
 
     # Connect using the previous options
@@ -26,8 +28,10 @@ async def main():
         asyncio.create_task(nc.close())
         print("Disconnection OK")
 
-    for sig in ('SIGINT', 'SIGTERM'):
-        asyncio.get_running_loop().add_signal_handler(getattr(signal, sig), signal_handler)
+    for sig in ("SIGINT", "SIGTERM"):
+        asyncio.get_running_loop().add_signal_handler(
+            getattr(signal, sig), signal_handler
+        )
     try:
         async for msg in sub.messages:
             print(f"Received a message on '{msg.subject}': {msg.data.decode()}")
@@ -35,5 +39,9 @@ async def main():
     except Exception as e:
         pass
 
-if __name__ == '__main__':
-    asyncio.run(main())
+
+if __name__ == "__main__":
+    if len(sys.argv) < 2:
+        print(f"Usage: {sys.argv[0]} <NATS server IP>")
+        sys.exit(1)
+    asyncio.run(main(sys.argv[1]))
